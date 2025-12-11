@@ -9,8 +9,20 @@ class Settings(BaseSettings):
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
     SECRET_KEY: str = os.getenv("SECRET_KEY", "change-me-in-production")
 
-    # Database
-    DATABASE_URL: str = "sqlite+aiosqlite:///./urge.db"
+    # Database - supports PostgreSQL (production) or SQLite (development)
+    # Railway provides DATABASE_URL in format: postgresql://user:pass@host:port/db
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./urge.db")
+
+    @property
+    def async_database_url(self) -> str:
+        """Convert DATABASE_URL to async-compatible URL"""
+        url = self.DATABASE_URL
+        # Convert postgres:// to postgresql+asyncpg:// for async support
+        if url.startswith("postgres://"):
+            return url.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif url.startswith("postgresql://"):
+            return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return url
 
     # AWS S3 - MUST be set via environment variables in production
     AWS_ACCESS_KEY_ID: str = os.getenv("AWS_ACCESS_KEY_ID", "")
